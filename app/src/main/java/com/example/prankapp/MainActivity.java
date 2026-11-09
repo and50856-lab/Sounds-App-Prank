@@ -16,11 +16,24 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private AudioManager audioManager;
 
-    // Список твоих звуков из папки res/raw/ (без расширения .mp3)
+    // Все 16 звуков строго по порядку
     private final int[] soundList = {
         R.raw.sound1,
         R.raw.sound2,
-        R.raw.sound3
+        R.raw.sound3,
+        R.raw.sound4,
+        R.raw.sound5,
+        R.raw.sound6,
+        R.raw.sound7,
+        R.raw.sound8,
+        R.raw.sound9,
+        R.raw.sound10,
+        R.raw.sound11,
+        R.raw.sound12,
+        R.raw.sound13,
+        R.raw.sound14,
+        R.raw.sound15,
+        R.raw.sound16
     };
     private int currentSoundIndex = 0;
 
@@ -29,10 +42,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Скрываем системные панели
+        // Скрываем системные панели и жесты
         hideSystemUI();
 
-        // Настраиваем звук
+        // Настраиваем звук на максимум
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         maxVolumeLoop();
 
@@ -50,13 +63,11 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer.release();
         }
 
-        // Создаем плеер для текущего звука из массива
         mediaPlayer = MediaPlayer.create(this, soundList[currentSoundIndex]);
 
         if (mediaPlayer != null) {
-            // Когда текущий звук заканчивается — запускаем следующий
             mediaPlayer.setOnCompletionListener(mp -> {
-                currentSoundIndex = (currentSoundIndex + 1) % soundList.length; // Переход к след. треку или в начало
+                currentSoundIndex = (currentSoundIndex + 1) % soundList.length; // Переход к следующему или на первый круг
                 playNextSound();
             });
 
@@ -72,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Блокируем качельку громкости
+    // Блокируем качельку громкости, чтобы не скручивали звук
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
@@ -116,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Выход при нажатии на секретную кнопку
+    // Выход при нажатии на секретную невидимую кнопку в левом нижнем углу
     private void stopPrankAndExit() {
         if (mediaPlayer != null) {
             mediaPlayer.stop();
