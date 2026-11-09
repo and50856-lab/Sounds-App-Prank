@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
             WindowInsetsController controller = getWindow().getInsetsController();
             if (controller != null) {
                 controller.hide(WindowInsets.Type.systemBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_STR_BARS_BY_SWIPE);
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE);
             }
         } else {
             View decorView = getWindow().getDecorView();
