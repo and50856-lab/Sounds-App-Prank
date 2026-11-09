@@ -16,28 +16,52 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private AudioManager audioManager;
 
+    // Список твоих звуков из папки res/raw/ (без расширения .mp3)
+    private final int[] soundList = {
+        R.raw.sound1,
+        R.raw.sound2,
+        R.raw.sound3
+    };
+    private int currentSoundIndex = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Скрываем системные панели (полноэкранный режим)
+        // Скрываем системные панели
         hideSystemUI();
 
         // Настраиваем звук
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         maxVolumeLoop();
 
-        // Запускаем наш mp3 файл из папки res/raw/my_sound.mp3
-        mediaPlayer = MediaPlayer.create(this, R.raw.my_sound);
-        if (mediaPlayer != null) {
-            mediaPlayer.setLooping(true); // Зацикливаем звук
-            mediaPlayer.start();
-        }
+        // Запускаем бесконечный плейлист
+        playNextSound();
 
         // Обработчик секретной невидимой кнопки в левом нижнем углу
         Button secretExit = findViewById(R.id.btnSecretExit);
         secretExit.setOnClickListener(v -> stopPrankAndExit());
+    }
+
+    // Функция последовательного воспроизведения звуков по кругу
+    private void playNextSound() {
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+        }
+
+        // Создаем плеер для текущего звука из массива
+        mediaPlayer = MediaPlayer.create(this, soundList[currentSoundIndex]);
+
+        if (mediaPlayer != null) {
+            // Когда текущий звук заканчивается — запускаем следующий
+            mediaPlayer.setOnCompletionListener(mp -> {
+                currentSoundIndex = (currentSoundIndex + 1) % soundList.length; // Переход к след. треку или в начало
+                playNextSound();
+            });
+
+            mediaPlayer.start();
+        }
     }
 
     // Функция постоянного выставления максимальной громкости
@@ -48,12 +72,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Блокируем качельку громкости (чтобы не убавляли звук кнопками)
+    // Блокируем качельку громкости
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            maxVolumeLoop(); // Сразу возвращаем максимум
-            return true;     // Перехватываем событие
+            maxVolumeLoop();
+            return true;
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -61,10 +85,9 @@ public class MainActivity extends AppCompatActivity {
     // Блокируем кнопку "Назад"
     @Override
     public void onBackPressed() {
-        // Ничего не делаем, выход заблокирован
+        // Ничего не делаем
     }
 
-    // Убираем элементы интерфейса системы (жесты/панели)
     private void hideSystemUI() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
@@ -100,6 +123,6 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer.release();
             mediaPlayer = null;
         }
-        finishAffinity(); // Полное закрытие приложения
+        finishAffinity();
     }
 }
