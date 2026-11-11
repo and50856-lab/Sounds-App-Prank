@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -5,21 +6,32 @@
     android:background="@android:color/black">
 
     <TextView
+        android:id="@+id/txtError"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:text="ERROR 404"
         android:textColor="@android:color/holo_red_dark"
         android:textSize="32sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:visibility="gone" />
 
-    <!-- Невидимая кнопка выхода в левом нижнем углу -->
+    <Button
+        android:id="@+id/btnEnterFullscreen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="Нажмите, чтобы перейти\nв полноэкранный режим"
+        android:textAllCaps="false"
+        android:textSize="16sp" />
+
+    <!-- Секретная кнопка выхода -->
     <Button
         android:id="@+id/btnSecretExit"
         android:layout_width="80dp"
         android:layout_height="80dp"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:background="@android:color/transparent"
         android:clickable="true"
         android:focusable="true" />
