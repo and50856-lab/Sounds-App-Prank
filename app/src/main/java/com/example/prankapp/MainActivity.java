@@ -4,17 +4,31 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.Button;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
     private MediaPlayer mediaPlayer;
     private AudioManager audioManager;
+    private final Handler handler = new Handler(Looper.getMainThreadLooper());
+
+    // Фоновый поток, который каждую секунду держит громкость на максимуме и скрывает панели
+    private final Runnable boosterRunnable = new Runnable() {
+        @Override
+        public void run() {
+            maxVolumeLoop();
+            hideSystemUI();
+            handler.postDelayed(this, 1000); // Повторять каждую 1 секунду
+        }
+    };
 
     // Все 16 звуков строго по порядку
     private final int[] soundList = {
@@ -42,19 +56,43 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Скрываем системные панели и жесты
-        hideSystemUI();
-
-        // Настраиваем звук на максимум
+        // Инициализируем аудио менеджер
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+
+        // Сразу делаем звук на максимум и скрываем интерфейс
         maxVolumeLoop();
+        hideSystemUI();
 
         // Запускаем бесконечный плейлист
         playNextSound();
 
         // Обработчик секретной невидимой кнопки в левом нижнем углу
         Button secretExit = findViewById(R.id.btnSecretExit);
-        secretExit.setOnClickListener(v -> stopPrankAndExit());
+        if (secretExit != null) {
+            secretExit.setOnClickListener(v -> stopPrankAndExit());
+        }
+
+        // Блокируем кнопку "Назад"
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Ничего не делаем
+            }
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Включаем жесткий контроль громкости и полног экрана при возврате в приложение
+        handler.post(boosterRunnable);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Останавливаем цикл, когда приложение свернуто (чтобы не тратить ресурсы)
+        handler.removeCallbacks(boosterRunnable);
     }
 
     // Функция последовательного воспроизведения звуков по кругу
@@ -63,11 +101,15 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer.release();
         }
 
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+
         mediaPlayer = MediaPlayer.create(this, soundList[currentSoundIndex]);
 
         if (mediaPlayer != null) {
             mediaPlayer.setOnCompletionListener(mp -> {
-                currentSoundIndex = (currentSoundIndex + 1) % soundList.length; // Переход к следующему или на первый круг
+                currentSoundIndex = (currentSoundIndex + 1) % soundList.length;
                 playNextSound();
             });
 
@@ -75,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Функция постоянного выставления максимальной громкости
+    // Принудительное выставление максимальной громкости
     private void maxVolumeLoop() {
         if (audioManager != null) {
             int maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
@@ -83,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Блокируем качельку громкости, чтобы не скручивали звук
+    // Блокируем качельку громкости
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
@@ -93,19 +135,15 @@ public class MainActivity extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
 
-    // Блокируем кнопку "Назад"
-    @Override
-    public void onBackPressed() {
-        // Ничего не делаем
-    }
-
+    // Жесткий полноэкранный режим
     private void hideSystemUI() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
             WindowInsetsController controller = getWindow().getInsetsController();
             if (controller != null) {
                 controller.hide(WindowInsets.Type.systemBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE);
+                // TRANSIENT_BARS_BY_SWIPE скрывает панели даже если пользователь попытался свайпнуть
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_TRANSIENT_BARS_BY_SWIPE);
             }
         } else {
             View decorView = getWindow().getDecorView();
@@ -127,11 +165,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Выход при нажатии на секретную невидимую кнопку в левом нижнем углу
+    // Выход при нажатии на секретную невидимую кнопку
     private void stopPrankAndExit() {
+        handler.removeCallbacks(boosterRunnable);
         if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
+            try {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer.release();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             mediaPlayer = null;
         }
         finishAffinity();
