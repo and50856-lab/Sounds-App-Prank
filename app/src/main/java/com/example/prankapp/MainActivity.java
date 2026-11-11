@@ -1,4 +1,3 @@
-
 package com.example.prankapp;
 
 import android.content.Context;
