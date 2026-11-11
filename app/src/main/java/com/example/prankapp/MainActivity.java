@@ -22,7 +22,6 @@ public class MainActivity extends AppCompatActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private boolean isExiting = false;
-    private boolean fullscreenEnabled = true;
 
     private final Runnable boosterRunnable = new Runnable() {
         @Override
@@ -32,10 +31,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             maxVolumeLoop();
-
-            if (fullscreenEnabled) {
-                hideSystemUI();
-            }
+            hideSystemUI();
 
             handler.postDelayed(this, 1000);
         }
@@ -70,13 +66,13 @@ public class MainActivity extends AppCompatActivity {
 
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
-        // Максимальная громкость
+        // Сразу максимальная громкость
         maxVolumeLoop();
 
-        // Сразу включаем полноэкранный режим
+        // Сразу полноэкранный режим
         hideSystemUI();
 
-        // Сразу пробуем закрепить приложение
+        // Запуск закрепления приложения
         try {
             startLockTask();
         } catch (Exception e) {
@@ -88,11 +84,12 @@ public class MainActivity extends AppCompatActivity {
 
         // Секретная кнопка выхода
         Button secretExit = findViewById(R.id.btnSecretExit);
+
         if (secretExit != null) {
             secretExit.setOnClickListener(v -> stopPrankAndExit());
         }
 
-        // Блокировка системного действия "Назад"
+        // Блокировка кнопки "Назад"
         getOnBackPressedDispatcher().addCallback(this,
                 new OnBackPressedCallback(true) {
                     @Override
@@ -157,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Принудительная максимальная громкость
+    // Максимальная громкость
     private void maxVolumeLoop() {
         if (audioManager != null) {
             int maxVol = audioManager.getStreamMaxVolume(
@@ -222,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
 
-        if (hasFocus && fullscreenEnabled) {
+        if (hasFocus && !isExiting) {
             hideSystemUI();
         }
     }
