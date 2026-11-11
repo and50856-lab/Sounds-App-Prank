@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.Button;
-import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private boolean isExiting = false;
-    private boolean fullscreenEnabled = false;
+    private boolean fullscreenEnabled = true;
 
     private final Runnable boosterRunnable = new Runnable() {
         @Override
@@ -71,31 +70,21 @@ public class MainActivity extends AppCompatActivity {
 
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
-        // Максимальная громкость сразу при запуске
+        // Максимальная громкость
         maxVolumeLoop();
+
+        // Сразу включаем полноэкранный режим
+        hideSystemUI();
+
+        // Сразу пробуем закрепить приложение
+        try {
+            startLockTask();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // Запускаем плейлист
         playNextSound();
-
-        // Переход в полноэкранный режим по нажатию
-        Button enterFullscreen = findViewById(R.id.btnEnterFullscreen);
-        TextView errorText = findViewById(R.id.txtError);
-
-        enterFullscreen.setOnClickListener(v -> {
-            fullscreenEnabled = true;
-
-            enterFullscreen.setVisibility(View.GONE);
-            errorText.setVisibility(View.VISIBLE);
-
-            hideSystemUI();
-
-            // Пробуем включить закрепление приложения
-            try {
-                startLockTask();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
 
         // Секретная кнопка выхода
         Button secretExit = findViewById(R.id.btnSecretExit);
@@ -249,7 +238,6 @@ public class MainActivity extends AppCompatActivity {
         handler.removeCallbacks(boosterRunnable);
         releaseMediaPlayer();
 
-        // Отключаем закрепление приложения
         try {
             stopLockTask();
         } catch (Exception e) {
