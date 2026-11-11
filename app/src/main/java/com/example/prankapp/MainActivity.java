@@ -1,3 +1,4 @@
+
 package com.example.prankapp;
 
 import android.content.Context;
@@ -11,6 +12,7 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,12 +23,22 @@ public class MainActivity extends AppCompatActivity {
     private AudioManager audioManager;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    // Каждую секунду обновляем громкость и скрываем системные панели
+    private boolean isExiting = false;
+    private boolean fullscreenEnabled = false;
+
     private final Runnable boosterRunnable = new Runnable() {
         @Override
         public void run() {
+            if (isExiting || isFinishing() || isDestroyed()) {
+                return;
+            }
+
             maxVolumeLoop();
-            hideSystemUI();
+
+            if (fullscreenEnabled) {
+                hideSystemUI();
+            }
+
             handler.postDelayed(this, 1000);
         }
     };
@@ -52,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private int currentSoundIndex = 0;
-    private boolean isExiting = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,12 +72,24 @@ public class MainActivity extends AppCompatActivity {
 
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
-        // Устанавливаем максимальную громкость и включаем полноэкранный режим
+        // Максимальная громкость сразу при запуске
         maxVolumeLoop();
-        hideSystemUI();
 
-        // Запускаем последовательное воспроизведение
+        // Запускаем плейлист
         playNextSound();
+
+        // Переход в полноэкранный режим по нажатию
+        Button enterFullscreen = findViewById(R.id.btnEnterFullscreen);
+        TextView errorText = findViewById(R.id.txtError);
+
+        enterFullscreen.setOnClickListener(v -> {
+            fullscreenEnabled = true;
+
+            enterFullscreen.setVisibility(View.GONE);
+            errorText.setVisibility(View.VISIBLE);
+
+            hideSystemUI();
+        });
 
         // Секретная кнопка выхода
         Button secretExit = findViewById(R.id.btnSecretExit);
@@ -74,13 +97,14 @@ public class MainActivity extends AppCompatActivity {
             secretExit.setOnClickListener(v -> stopPrankAndExit());
         }
 
-        // Обработчик кнопки "Назад"
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                // Ничего не делаем
-            }
-        });
+        // Блокировка системного действия "Назад"
+        getOnBackPressedDispatcher().addCallback(this,
+                new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        // Не закрываем приложение
+                    }
+                });
     }
 
     @Override
@@ -109,7 +133,9 @@ public class MainActivity extends AppCompatActivity {
 
         if (mediaPlayer != null) {
             mediaPlayer.setOnCompletionListener(mp -> {
-                currentSoundIndex = (currentSoundIndex + 1) % soundList.length;
+                currentSoundIndex =
+                        (currentSoundIndex + 1) % soundList.length;
+
                 playNextSound();
             });
 
@@ -136,19 +162,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Установка максимальной громкости
+    // Принудительная максимальная громкость
     private void maxVolumeLoop() {
         if (audioManager != null) {
-            int maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVol, 0);
+            int maxVol = audioManager.getStreamMaxVolume(
+                    AudioManager.STREAM_MUSIC
+            );
+
+            audioManager.setStreamVolume(
+                    AudioManager.STREAM_MUSIC,
+                    maxVol,
+                    0
+            );
         }
     }
 
-    // Обработка кнопок громкости
+    // Перехват кнопок громкости
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
                 keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+
             maxVolumeLoop();
             return true;
         }
@@ -158,18 +192,23 @@ public class MainActivity extends AppCompatActivity {
 
     // Полноэкранный режим
     private void hideSystemUI() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+        if (android.os.Build.VERSION.SDK_INT >=
+                android.os.Build.VERSION_CODES.R) {
+
             getWindow().setDecorFitsSystemWindows(false);
 
-            WindowInsetsController controller = getWindow().getInsetsController();
+            WindowInsetsController controller =
+                    getWindow().getInsetsController();
 
             if (controller != null) {
                 controller.hide(WindowInsets.Type.systemBars());
 
                 controller.setSystemBarsBehavior(
-                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        WindowInsetsController
+                                .BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 );
             }
+
         } else {
             View decorView = getWindow().getDecorView();
 
@@ -188,12 +227,12 @@ public class MainActivity extends AppCompatActivity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
 
-        if (hasFocus) {
+        if (hasFocus && fullscreenEnabled) {
             hideSystemUI();
         }
     }
 
-    // Выход через секретную кнопку
+    // Секретный выход
     private void stopPrankAndExit() {
         if (isExiting) {
             return;
