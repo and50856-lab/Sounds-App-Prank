@@ -88,6 +88,13 @@ public class MainActivity extends AppCompatActivity {
             errorText.setVisibility(View.VISIBLE);
 
             hideSystemUI();
+
+            // Пробуем включить закрепление приложения
+            try {
+                startLockTask();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
 
         // Секретная кнопка выхода
@@ -241,6 +248,13 @@ public class MainActivity extends AppCompatActivity {
 
         handler.removeCallbacks(boosterRunnable);
         releaseMediaPlayer();
+
+        // Отключаем закрепление приложения
+        try {
+            stopLockTask();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         finishAffinity();
     }
